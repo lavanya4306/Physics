@@ -1,0 +1,89 @@
+import pygame
+import random
+from random import randint
+
+#general setup
+pygame.init()
+pygame.display.set_caption("GAME")
+WINDOW_WIDTH,WINDOW_HEIGHT=1280,720
+display_surface=pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT))
+running = True
+clock=pygame.time.Clock()
+
+# loading image of moth
+image=pygame.image.load("moth.png").convert_alpha()
+
+class Moth:
+    def __init__(self,x,y,vx,vy,eta):
+        self.pos=pygame.math.Vector2(x,y)
+        self.velocity=pygame.math.Vector2(vx,vy)
+        self.image=pygame.transform.scale(image,(20,20))
+        self.rect=self.image.get_frect(center=self.pos)
+        self.eta=eta
+        
+    def draw(self):
+        display_surface.blit(self.image,self.rect)
+        
+    
+    def move(self,dt):
+        noise=pygame.math.Vector2(random.uniform(self.eta*(-10),self.eta*(10)),random.uniform(self.eta*(-10),self.eta*10))
+        self.rect.center+=self.velocity*dt+noise
+        if self.rect.top<=0:
+            self.rect.top=0;self.velocity.y*=-1
+        if self.rect.bottom>=WINDOW_HEIGHT:
+            self.rect.bottom=WINDOW_HEIGHT;self.velocity.y*=-1
+        if self.rect.right<=0:
+            self.rect.right=0;self.velocity.x*=-1
+        if self.rect.left>=WINDOW_WIDTH:
+            self.rect.left=WINDOW_WIDTH;self.velocity.x*=-1
+    
+def check_collision(moth_1,moth_2):       
+    dist = moth_1.pos.distance_to(moth_2.pos)
+    return dist < (20)   
+
+def resolve_collision(moth_1,moth_2):
+    normal = moth_1.pos - moth_2.pos
+    distance = normal.length()
+    
+    normal.normalize_ip()
+    
+    moth_1.velocity=(moth_2.velocity.dot(normal))
+    moth_2.velocity=(moth_1.velocity.dot(normal))
+    
+    overlap = (20) - distance
+    correction = normal * (overlap / 2)
+    moth_1.pos += correction
+    moth_2.pos -= correction
+
+    
+        
+             
+
+n=50
+Moths=[]
+for i in range(n):
+    moth=Moth(randint(0,WINDOW_WIDTH),randint(0,WINDOW_HEIGHT),randint(1,10),randint(1,10),i+1)
+    Moths.append(moth)
+
+while running:
+    display_surface.fill((0, 0, 0)) 
+    dt=clock.tick(10)/1000
+    # event loop
+    for event in pygame.event.get():
+        if event.type==pygame.QUIT:
+            running = False
+    
+    for i in Moths:
+        i.draw()
+        
+    for i in Moths:
+        i.move(dt)
+    
+    for i in range(n):
+     for j in range(i + 1,n):
+        if check_collision(Moths[i], Moths[j]):
+            resolve_collision(Moths[i], Moths[j])
+        
+    pygame.display.update()
+            
+pygame.quit()
